@@ -6,6 +6,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use DBykov\SchemaSync\DiffEngine;
 use DBykov\SchemaSync\DbInspector;
+use DBykov\SchemaSync\DTOParser;
 
 $args = $argv;
 array_shift($args);
@@ -20,13 +21,33 @@ $fqcn = $args[1];
 
 $options = [];
 foreach ($args as $a) {
-    if (str_starts_with($a,'--')) {
-        [$k,$v] = explode('=', $a.'=', 2);
-        $options[trim($k,'-')] = $v === '' ? null : $v;
-    }
+  if (!str_starts_with($a, '--')) {
+    continue;
+  }
+
+  if (str_contains($a, '=')) {
+    [$k, $v] = explode('=', $a, 2);
+    $v = $v === '' ? null : $v;
+  } else {
+    $k = $a;
+    $v = null;
+  }
+
+  $options[trim($k, '-')] = $v;
 }
 
-$dialect = $options['dialect'] ?? 'mysql';
+
+$rawDialect = $options['dialect'] ?? 'mysql';
+$dialect = strtolower(trim($rawDialect));
+if (in_array($dialect, ['pg','postgres','postgresql'], true)) {
+  $dialect = 'pgsql';
+}
+
+if (!in_array($dialect, ['mysql','pgsql'], true)) {
+  fwrite(STDERR, "Unknown dialect '{$rawDialect}'. Supported: mysql, pgsql (aka pg/postgres).\n");
+  exit(2);
+}
+
 $engine = new DiffEngine();
 
 if ($cmd === 'generate') {
@@ -46,7 +67,7 @@ if ($cmd === 'diff') {
 
     if (!$table) {
         // derive table from DTO
-        $dto = (new \SchemaSync\DTOParser())->parse($fqcn);
+        $dto = (new DTOParser())->parse($fqcn);
         $table = $dto['table'];
     }
 

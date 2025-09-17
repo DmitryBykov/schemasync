@@ -2,7 +2,6 @@
 namespace DBykov\SchemaSync;
 
 use PDO;
-use DBykov\SchemaSync\Exception\SchemaSyncException;
 
 final class DbInspector
 {
