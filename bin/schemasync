@@ -1,0 +1,64 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use DBykov\SchemaSync\DiffEngine;
+use DBykov\SchemaSync\DbInspector;
+
+$args = $argv;
+array_shift($args);
+
+if (count($args) < 2) {
+    echo "Usage:\n  schemasync generate <FQCN> --dialect=mysql|pgsql\n  schemasync diff <FQCN> --dialect=mysql|pgsql --dsn=... [--user=] [--pass=] [--table=]\n";
+    exit(1);
+}
+
+$cmd = $args[0];
+$fqcn = $args[1];
+
+$options = [];
+foreach ($args as $a) {
+    if (str_starts_with($a,'--')) {
+        [$k,$v] = explode('=', $a.'=', 2);
+        $options[trim($k,'-')] = $v === '' ? null : $v;
+    }
+}
+
+$dialect = $options['dialect'] ?? 'mysql';
+$engine = new DiffEngine();
+
+if ($cmd === 'generate') {
+    echo $engine->generateCreate($fqcn, $dialect);
+    exit(0);
+}
+
+if ($cmd === 'diff') {
+    $dsn = $options['dsn'] ?? null;
+    if (!$dsn) { echo "Missing --dsn\n"; exit(2); }
+    $user = $options['user'] ?? null;
+    $pass = $options['pass'] ?? null;
+    $table = $options['table'] ?? null;
+
+    $pdo = new PDO($dsn, $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+    $inspector = new DbInspector($pdo, $dialect, $options['schema'] ?? null);
+
+    if (!$table) {
+        // derive table from DTO
+        $dto = (new \SchemaSync\DTOParser())->parse($fqcn);
+        $table = $dto['table'];
+    }
+
+    $current = $inspector->introspect($table);
+    $ops = $engine->diff($fqcn, $current, $dialect);
+
+    foreach ($ops as $op) {
+        echo strtoupper($op['severity']) . ': ' . $op['reason'] . PHP_EOL;
+        echo $op['sql'] . PHP_EOL . PHP_EOL;
+    }
+    exit(0);
+}
+
+echo "Unknown command\n";
+exit(2);

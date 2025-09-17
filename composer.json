@@ -1,0 +1,23 @@
+{
+  "name": "dbykov/schemasync",
+  "description": "SchemaSync: generate SQL migrations from DTOs (MySQL/Postgres) and warn about destructive changes.",
+  "type": "library",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "DBykov\\SchemaSync\\": "src/"
+    }
+  },
+  "bin": ["bin/schemasync"],
+  "require": {
+    "php": ">=8.1"
+  },
+  "authors": [
+    {
+      "name": "Dmitry Bykov",
+      "email": "dmitrybykov05@gmail.com"
+    }
+  ],
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}
