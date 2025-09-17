@@ -2,7 +2,7 @@
 <?php
 declare(strict_types=1);
 
-require __DIR__ . '/../vendor/autoload.php';
+require $GLOBALS['_composer_autoload_path'] ?? __DIR__ . '/../vendor/autoload.php';
 
 use DBykov\SchemaSync\DiffEngine;
 use DBykov\SchemaSync\DbInspector;
